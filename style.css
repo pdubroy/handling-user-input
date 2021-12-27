@@ -1,0 +1,19 @@
+.absolute {
+  position: absolute;
+}
+.inline-block {
+  display: inline-block;
+}
+.w-24 {
+  width: 6rem;
+}
+.h-24 {
+  height: 6rem;
+}
+.bg-indigo-500 {
+  background-color: rgb(99 102 241);
+}
+#myObject {
+  left: 5px;
+  top: 35px;
+}
