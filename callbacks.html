@@ -13,10 +13,10 @@
   let origPos;
 
   draggable.addEventListener("mousedown", (evt) => {
-    isMouseDown = true;
     dragOrigin = { x: evt.clientX, y: evt.clientY };
     const { left, top } = draggable.getBoundingClientRect();
     origPos = { left, top };
+    didDrag = false;
   });
   draggable.addEventListener("mousemove", (evt) => {
     if (dragOrigin) {

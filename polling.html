@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<title>Callbacks</title>
+<link rel="stylesheet" href="style.css" />
+<code id="status">Ready</code>
+<div id="myObject" class="absolute inline-block w-24 h-24 bg-indigo-500"></div>
+<script>
+  const draggable = document.getElementById("myObject");
+  const setStatus = (str) =>
+    (document.getElementById("status").textContent = str);
+
+  // In a polling-based approach, the current state of the input devices is
+  // usually globally available. We need to do this ourselves by listening
+  // to the appropriate events and updating the state appropriately.
+  const mouse = {
+    buttons: [{ pressed: false }],
+    location: { clientX: 0, clientY: 0 },
+  };
+  const keyboard = {
+    keys: { Escape: { pressed: false } },
+  };
+  window.addEventListener("mousedown", () => {
+    mouse.buttons[0].pressed = true;
+  });
+  window.addEventListener("mouseup", () => {
+    mouse.buttons[0].pressed = false;
+  });
+  window.addEventListener("mousemove", ({ clientX, clientY }) => {
+    mouse.location.clientX = clientX;
+    mouse.location.clientY = clientY;
+  });
+  window.addEventListener("keydown", ({ key }) => {
+    if (key === "Escape") {
+      keyboard.keys[key].pressed = true;
+    }
+  });
+  window.addEventListener("keyup", ({ key }) => {
+    if (key === "Escape") {
+      keyboard.keys[key].pressed = false;
+    }
+  });
+
+  // Polling-based approach
+  // ----------------------
+
+  let didDrag = false;
+  let dragOrigin;
+  let origPos;
+
+  (function handleFrame() {
+    if (mouse.buttons[0].pressed) {
+      const { clientX, clientY } = mouse.location;
+      if (!dragOrigin) {
+        // Handle mousedown
+        dragOrigin = { x: clientX, y: clientY };
+        const { left, top } = draggable.getBoundingClientRect();
+        origPos = { left, top };
+        didDrag = false;
+      }
+      if (clientX !== dragOrigin.x || clientY !== dragOrigin.y) {
+        // Handle mousemove
+        didDrag = true;
+        const deltaX = clientX - dragOrigin.x;
+        const deltaY = clientY - dragOrigin.y;
+        draggable.style.left = `${origPos.left + deltaX}px`;
+        draggable.style.top = `${origPos.top + deltaY}px`;
+        setStatus("dragging...");
+      }
+    } else if (dragOrigin) {
+      // Handle mouseup
+      dragOrigin = undefined;
+      if (didDrag) {
+        setStatus("Dropped!");
+      } else {
+        setStatus("Clicked!");
+      }
+    }
+
+    if (dragOrigin && keyboard.keys["Escape"].pressed) {
+      // Handle keypress
+      dragOrigin = undefined;
+      draggable.style.left = `${origPos.left}px`;
+      draggable.style.top = `${origPos.top}px`;
+      setStatus("Cancelled!");
+    }
+
+    requestAnimationFrame(handleFrame);
+  })();
+</script>
