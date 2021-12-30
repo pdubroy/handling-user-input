@@ -10,15 +10,17 @@
     (document.getElementById("status").textContent = str);
 
   const events = new abro.EventSource(draggable);
+  const windowEvents = new abro.EventSource(window);
 
-  async function handleDrag() {
+  abro.loop(async function handleDrag() {
     const { clientX, clientY } = await events.mousedown;
 
     const { left, top } = draggable.getBoundingClientRect();
     const origPos = { left, top };
 
-    let canceled = false;
-    await abro.any(
+    // `or` starts multiple processes, waiting for the first one to complete,
+    // at which point the others are terminated.
+    await abro.or(
       async function handleMouseMove() {
         let dragOrigin = { x: clientX, y: clientY };
         while (true) {
@@ -41,18 +43,14 @@
         }
       },
       async function handleEscape() {
-        await events.keydownIs("Escape");
-        canceled = true;
+        let key;
+        while (key !== "Escape") {
+          ({ key } = await windowEvents.keydown);
+        }
+        draggable.style.left = `${origPos.left}px`;
+        draggable.style.top = `${origPos.top}px`;
+        setStatus("Cancelled!");
       }
     );
-    // Handle mouseup OR cancelled.
-    dragOrigin = undefined;
-    if (didDrag) {
-      setStatus("Dropped!");
-    } else {
-      setStatus("Clicked!");
-    }
-  }
-
-  abro.loop(handleDrag);
+  });
 </script>

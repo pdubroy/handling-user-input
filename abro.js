@@ -96,11 +96,11 @@ const abro = (() => {
     }
   }
 
-  async function any(...fns) {
+  async function or(...fns) {
     await currentFiber.spawnMany(fns);
   }
 
-  async function all(...fns) {
+  async function and(...fns) {
     await currentFiber.spawnMany(fns, true);
   }
 
@@ -120,5 +120,5 @@ const abro = (() => {
     };
   }
 
-  return { EventSource, any, all, run, loop };
+  return { EventSource, or, and, run, loop };
 })();
