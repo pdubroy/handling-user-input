@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<title>Callbacks</title>
+<link rel="stylesheet" href="style.css" />
+<code id="status">Ready</code>
+<div id="myObject" class="absolute inline-block w-24 h-24 bg-indigo-500"></div>
+<script src="abro.js"></script>
+<script>
+  const draggable = document.getElementById("myObject");
+  const setStatus = (str) =>
+    (document.getElementById("status").textContent = str);
+
+  const events = new abro.EventSource(draggable);
+
+  async function handleDrag() {
+    const { clientX, clientY } = await events.mousedown;
+
+    const { left, top } = draggable.getBoundingClientRect();
+    const origPos = { left, top };
+
+    let canceled = false;
+    await abro.any(
+      async function handleMouseMove() {
+        let dragOrigin = { x: clientX, y: clientY };
+        while (true) {
+          const evt = await events.mousemove;
+          didDrag = true;
+          const deltaX = evt.clientX - dragOrigin.x;
+          const deltaY = evt.clientY - dragOrigin.y;
+          draggable.style.left = `${origPos.left + deltaX}px`;
+          draggable.style.top = `${origPos.top + deltaY}px`;
+          setStatus("dragging...");
+        }
+      },
+      async function handleMouseUp() {
+        await events.mouseup;
+        dragOrigin = undefined;
+        if (didDrag) {
+          setStatus("Dropped!");
+        } else {
+          setStatus("Clicked!");
+        }
+      },
+      async function handleEscape() {
+        await events.keydownIs("Escape");
+        canceled = true;
+      }
+    );
+    // Handle mouseup OR cancelled.
+    dragOrigin = undefined;
+    if (didDrag) {
+      setStatus("Dropped!");
+    } else {
+      setStatus("Clicked!");
+    }
+  }
+
+  abro.loop(handleDrag);
+</script>
