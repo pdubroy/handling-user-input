@@ -1,20 +1,46 @@
 const abro = (() => {
-  let currentFiber;
+  const uniqueId = (() => {
+    let nextId = 0;
+    return (prefix = '') => `${prefix}${nextId++}`;
+  })();
 
   const assert = (cond, message) => {
-    if (!cond) throw new Error(message);
+    if (!cond) {
+      console.error(message);
+      throw new Error(message);
+    }
   };
+
+  const log = (...args) => {
+    console.log(currentFiber.name, ...args);
+  };
+
+  let currentFiber;
+
+  class FiberTermination extends Error {}
 
   class Fiber {
     constructor(fn) {
+      this.name = uniqueId('fiber');
+      if (fn.name) {
+        this.name += `-${fn.name}`;
+      }
       this._fn = fn;
       this._children = [];
       this._promises = [];
+      this.state = 'READY';
     }
 
     async run() {
       currentFiber = this;
-      await this._fn();
+      this.state = 'RUNNING';
+      return this._fn().catch(() => {
+        if (err instanceof FiberTermination) {
+          console.log(err.message);
+        } else {
+          console.error(err);
+        }
+      });
       // TODO: Should we restore the previous value of currentFiber here?
       // TODO: Should we clear this._children and this._promises here?
     }
@@ -26,8 +52,8 @@ const abro = (() => {
     }
 
     // Spawn a child fiber.
-    async spawn(fn) {
-      await this.spawnMany([fn]);
+    spawn(fn) {
+      return this.spawnMany([fn]);
     }
 
     // Spawn multiple child fibers.
@@ -42,16 +68,18 @@ const abro = (() => {
       currentFiber = this;
     }
 
-    async _await(entry) {
+    _await(entry) {
       this._promises.push(entry);
-      const val = await entry.promise;
-      currentFiber = this;
-      return val;
+      return entry.promise;
     }
 
     terminate() {
+      this.state = 'TERMINATED';
+
       // Reject all of the promises created from within this fiber.
-      this._promises.forEach(({ reject }) => reject());
+      this._promises.forEach(({ fiber, reject, eventType, resolved }) => {
+        reject(new FiberTermination(`${fiber.name} terminated`));
+      });
       this._promises = [];
 
       // Terminate all child fibers.
@@ -71,12 +99,21 @@ const abro = (() => {
           get: () => this._promiseForEvent(eventType)
         });
         domNode.addEventListener(eventType, (evt) => {
-          // If any process is waiting on this event, resolve the promise so
-          // process can continue.
-          for (const { resolve } of this._promisesByEventType.get(eventType)) {
-            resolve(evt);
-          }
+          // Save the current list of promises and reset the list, because as
+          // soon as we start resolving, new ones can get enqueued.
+          const promises = this._promisesByEventType.get(eventType);
           this._promisesByEventType.set(eventType, []);
+
+          // Resolve the promises for all processes waiting on this event.
+          promises.forEach(({ fiber, resolve }) => {
+            // TODO: Fix leak where terminated fibers still appear in this list.
+            if (fiber.state === 'RUNNING') {
+              queueMicrotask(() => {
+                currentFiber = fiber;
+              });
+              resolve(evt);
+            }
+          });
         });
       });
     }
@@ -86,9 +123,12 @@ const abro = (() => {
     _promiseForEvent(eventType) {
       assert(this._promisesByEventType.has(eventType), `not supported: ${eventType}`);
 
-      let entry = {};
+      let entry = { fiber: currentFiber, eventType, resolved: false };
       entry.promise = new Promise((res, rej) => {
-        entry.resolve = res;
+        entry.resolve = (val) => {
+          entry.resolved = true;
+          return res(val);
+        };
         entry.reject = rej;
       });
       this._promisesByEventType.get(eventType).push(entry);
@@ -96,16 +136,16 @@ const abro = (() => {
     }
   }
 
-  async function or(...fns) {
-    await currentFiber.spawnMany(fns);
+  function or(...fns) {
+    return currentFiber.spawnMany(fns);
   }
 
-  async function and(...fns) {
-    await currentFiber.spawnMany(fns, true);
+  function and(...fns) {
+    return currentFiber.spawnMany(fns, true);
   }
 
-  async function run(fn) {
-    await new Fiber(fn).run();
+  function run(fn) {
+    return new Fiber(fn).run();
   }
 
   function loop(fn) {
@@ -120,5 +160,12 @@ const abro = (() => {
     };
   }
 
-  return { EventSource, or, and, run, loop };
+  return {
+    EventSource,
+    or,
+    and,
+    run,
+    loop,
+    log
+  };
 })();
