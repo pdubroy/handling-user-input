@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 const abro = (() => {
   const uniqueId = (() => {
     let nextId = 0;
@@ -34,7 +35,7 @@ const abro = (() => {
     async run() {
       currentFiber = this;
       this.state = 'RUNNING';
-      return this._fn().catch(() => {
+      return this._fn().catch((err) => {
         if (err instanceof FiberTermination) {
           console.log(err.message);
         } else {
@@ -77,7 +78,7 @@ const abro = (() => {
       this.state = 'TERMINATED';
 
       // Reject all of the promises created from within this fiber.
-      this._promises.forEach(({ fiber, reject, eventType, resolved }) => {
+      this._promises.forEach(({ fiber, reject }) => {
         reject(new FiberTermination(`${fiber.name} terminated`));
       });
       this._promises = [];
@@ -93,7 +94,7 @@ const abro = (() => {
     _promisesByEventType = new Map();
 
     constructor(domNode) {
-      ['mousedown', 'mouseup', 'mousemove', 'keydown'].forEach((eventType) => {
+      ['pointerdown', 'pointerup', 'pointermove', 'keydown'].forEach((eventType) => {
         this._promisesByEventType.set(eventType, []);
         Object.defineProperty(this, eventType, {
           get: () => this._promiseForEvent(eventType)

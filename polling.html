@@ -43,7 +43,7 @@
   // ----------------------
 
   let didDrag = false;
-  let didHandleMouseDown = false;
+  let didHandlePointerDown = false;
   let dragOrigin;
   let origPos;
 
@@ -56,25 +56,24 @@
       const draggableRect = draggable.getBoundingClientRect();
 
       if (
-        !didHandleMouseDown &&
+        !didHandlePointerDown &&
         rectContains(draggableRect, clientX, clientY)
       ) {
-        // Handle mousedown
+        // Handle pointerdown
         dragOrigin = { x: clientX, y: clientY };
         origPos = { left: draggableRect.left, top: draggableRect.top };
-        didHandleMouseDown = true;
         didDrag = false;
       }
 
-      // Ensure that we do the mousedown action only in the first frame where
+      // Ensure that we do the pointerdown action only in the first frame where
       // we detect that the button is pressed.
-      didHandleMouseDown = true;
+      didHandlePointerDown = true;
 
       if (
         dragOrigin &&
         (clientX !== dragOrigin.x || clientY !== dragOrigin.y)
       ) {
-        // Handle mousemove
+        // Handle pointermove
         didDrag = true;
         const deltaX = clientX - dragOrigin.x;
         const deltaY = clientY - dragOrigin.y;
@@ -83,7 +82,7 @@
         setStatus("dragging...");
       }
     } else if (dragOrigin) {
-      // Handle mouseup
+      // Handle pointerup
       dragOrigin = undefined;
       if (didDrag) {
         setStatus("Dropped!");
@@ -91,7 +90,7 @@
         setStatus("Clicked!");
       }
     } else {
-      didHandleMouseDown = false;
+      didHandlePointerDown = false;
     }
 
     if (dragOrigin && keyboard.keys["Escape"].pressed) {

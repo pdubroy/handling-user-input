@@ -13,7 +13,8 @@
   const windowEvents = new abro.EventSource(window);
 
   abro.loop(async () => {
-    const { clientX, clientY } = await events.mousedown;
+    const downEvent = await events.pointerdown;
+    downEvent.target.setPointerCapture(downEvent.pointerId);
 
     const { left, top } = draggable.getBoundingClientRect();
     const origPos = { left, top };
@@ -25,20 +26,18 @@
     // in Céu (ceu-lang.org), another language influenced by Esterel.
     await abro.or(
       async function handleDrag() {
-        let dragOrigin = { x: clientX, y: clientY };
         while (true) {
-          const evt = await events.mousemove;
+          const { clientX, clientY } = await events.pointermove;
           didDrag = true;
-          const deltaX = evt.clientX - dragOrigin.x;
-          const deltaY = evt.clientY - dragOrigin.y;
+          const deltaX = clientX - downEvent.x;
+          const deltaY = clientY - downEvent.y;
           draggable.style.left = `${origPos.left + deltaX}px`;
           draggable.style.top = `${origPos.top + deltaY}px`;
           setStatus("dragging...");
         }
       },
-      async function handleMouseUp() {
-        await events.mouseup;
-        dragOrigin = undefined;
+      async function handlePointerUp() {
+        await events.pointerup;
         if (didDrag) {
           setStatus("Dropped!");
         } else {

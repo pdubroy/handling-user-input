@@ -4,6 +4,7 @@
     "format": "prettier --write '*.{html,css}'"
   },
   "devDependencies": {
+    "eslint": "^8.6.0",
     "prettier": "^2.5.1"
   }
 }
