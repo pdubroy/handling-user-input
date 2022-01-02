@@ -43,20 +43,37 @@
   // ----------------------
 
   let didDrag = false;
+  let didHandleMouseDown = false;
   let dragOrigin;
   let origPos;
+
+  const rectContains = ({ top, right, bottom, left }, x, y) =>
+    left <= x && x <= right && top <= y && y <= bottom;
 
   (function handleFrame() {
     if (mouse.buttons[0].pressed) {
       const { clientX, clientY } = mouse.location;
-      if (!dragOrigin) {
+      const draggableRect = draggable.getBoundingClientRect();
+
+      if (
+        !didHandleMouseDown &&
+        rectContains(draggableRect, clientX, clientY)
+      ) {
         // Handle mousedown
         dragOrigin = { x: clientX, y: clientY };
-        const { left, top } = draggable.getBoundingClientRect();
-        origPos = { left, top };
+        origPos = { left: draggableRect.left, top: draggableRect.top };
+        didHandleMouseDown = true;
         didDrag = false;
       }
-      if (clientX !== dragOrigin.x || clientY !== dragOrigin.y) {
+
+      // Ensure that we do the mousedown action only in the first frame where
+      // we detect that the button is pressed.
+      didHandleMouseDown = true;
+
+      if (
+        dragOrigin &&
+        (clientX !== dragOrigin.x || clientY !== dragOrigin.y)
+      ) {
         // Handle mousemove
         didDrag = true;
         const deltaX = clientX - dragOrigin.x;
@@ -73,6 +90,8 @@
       } else {
         setStatus("Clicked!");
       }
+    } else {
+      didHandleMouseDown = false;
     }
 
     if (dragOrigin && keyboard.keys["Escape"].pressed) {
