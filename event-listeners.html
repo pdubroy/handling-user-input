@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<title>Callbacks</title>
+<title>Event Listeners</title>
 <link rel="stylesheet" href="style.css" />
 <code id="status">Ready</code>
 <div id="myObject" class="absolute inline-block w-24 h-24 bg-indigo-500"></div>
@@ -12,13 +12,14 @@
   let dragOrigin;
   let origPos;
 
-  draggable.addEventListener("mousedown", (evt) => {
+  draggable.addEventListener("pointerdown", (evt) => {
+    evt.target.setPointerCapture(evt.pointerId);
     dragOrigin = { x: evt.clientX, y: evt.clientY };
     const { left, top } = draggable.getBoundingClientRect();
     origPos = { left, top };
     didDrag = false;
   });
-  draggable.addEventListener("mousemove", (evt) => {
+  draggable.addEventListener("pointermove", (evt) => {
     if (dragOrigin) {
       didDrag = true;
       const deltaX = evt.clientX - dragOrigin.x;
@@ -28,7 +29,7 @@
       setStatus("dragging...");
     }
   });
-  draggable.addEventListener("mouseup", (evt) => {
+  draggable.addEventListener("pointerup", (evt) => {
     dragOrigin = undefined;
     if (didDrag) {
       setStatus("Dropped!");
