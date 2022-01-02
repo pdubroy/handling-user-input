@@ -12,16 +12,19 @@
   const events = new abro.EventSource(draggable);
   const windowEvents = new abro.EventSource(window);
 
-  abro.loop(async function handleDrag() {
+  abro.loop(async () => {
     const { clientX, clientY } = await events.mousedown;
 
     const { left, top } = draggable.getBoundingClientRect();
     const origPos = { left, top };
 
+    let didDrag = false;
+
     // `or` starts multiple processes, waiting for the first one to complete,
-    // at which point the others are terminated.
+    // at which point the others are terminated. This is inspired by `par/or`
+    // in Céu (ceu-lang.org), another language influenced by Esterel.
     await abro.or(
-      async function handleMouseMove() {
+      async function handleDrag() {
         let dragOrigin = { x: clientX, y: clientY };
         while (true) {
           const evt = await events.mousemove;

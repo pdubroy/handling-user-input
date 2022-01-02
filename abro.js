@@ -160,12 +160,5 @@ const abro = (() => {
     };
   }
 
-  return {
-    EventSource,
-    or,
-    and,
-    run,
-    loop,
-    log
-  };
+  return { EventSource, or, and, run, loop, log };
 })();
