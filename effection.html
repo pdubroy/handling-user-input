@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<title>Effection</title>
+<link rel="stylesheet" href="style.css" />
+<code id="status">Ready</code>
+<div id="myObject" class="absolute inline-block w-24 h-24 bg-indigo-500"></div>
+<script src="./effection-2.0.3.bundle.js"></script>
+<script type="module">
+  const draggable = document.getElementById("myObject");
+  const setStatus = (str) =>
+    (document.getElementById("status").textContent = str);
+
+  effection.run(function* () {
+    const downEvent = yield effection.once(draggable, "pointerdown");
+    downEvent.target.setPointerCapture(downEvent.pointerId);
+
+    const { left, top } = draggable.getBoundingClientRect();
+    const origPos = { left, top };
+
+    let didDrag = false;
+
+    yield effection.race([
+      function* handleDrag() {
+        while (true) {
+          const { clientX, clientY } = yield effection.once(
+            draggable,
+            "pointermove"
+          );
+          didDrag = true;
+          const deltaX = clientX - downEvent.x;
+          const deltaY = clientY - downEvent.y;
+          draggable.style.left = `${origPos.left + deltaX}px`;
+          draggable.style.top = `${origPos.top + deltaY}px`;
+          setStatus("dragging...");
+        }
+      },
+      function* handlePointerUp() {
+        yield effection.once(draggable, "pointerup");
+        if (didDrag) {
+          setStatus("Dropped!");
+        } else {
+          setStatus("Clicked!");
+        }
+      },
+      function* handleEscape() {
+        let key;
+        while (key !== "Escape") {
+          ({ key } = yield effection.once(window, "keydown"));
+        }
+        draggable.style.left = `${origPos.left}px`;
+        draggable.style.top = `${origPos.top}px`;
+        setStatus("Cancelled!");
+      },
+    ]);
+  });
+</script>
